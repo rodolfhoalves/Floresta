@@ -1,0 +1,19 @@
+name: Build Floresta (macOS)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - run: cargo build --release
+      - uses: actions/upload-artifact@v3
+        with:
+          name: florestad-macos
+          path: target/release/florestad
