@@ -1,4 +1,4 @@
-name: Build Floresta (macOS ARM64)
+name: Build Floresta (macOS ARM64) 2
 
 on:
   workflow_dispatch:
