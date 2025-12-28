@@ -1,4 +1,4 @@
-name: Build Floresta (macOS)
+name: Build Floresta (macOS ARM64) 2
 
 on:
   workflow_dispatch:
@@ -8,10 +8,7 @@ permissions:
 
 jobs:
   build:
-    strategy:
-      matrix:
-        os: [macos-13, macos-14]  # 13 = Intel (x86_64), 14 = Apple Silicon (arm64)
-    runs-on: ${{ matrix.os }}
+    runs-on: macos-14   # só ARM64
 
     steps:
       - name: Checkout
@@ -25,26 +22,21 @@ jobs:
         with:
           cache-on-failure: true
 
-      - name: Build release
+      - name: Build release (all bins)
         run: |
-          cargo build --release
+          cargo build --release --bins
           strip -x target/release/florestad || true
-      - name: Detect arch label
-        id: arch
-        run: |
-          if [[ "${{ matrix.os }}" == "macos-13" ]]; then
-            echo "val=x86_64" >> "$GITHUB_OUTPUT"
-          else
-            echo "val=arm64" >> "$GITHUB_OUTPUT"
-          fi
-      - name: Pack artifact
+          strip -x target/release/floresta-cli || true
+
+      - name: Package
         run: |
           mkdir -p dist
           cp target/release/florestad dist/
-          tar -czf florestad-macos-${{ steps.arch.outputs.val }}.tar.gz -C dist florestad
+          cp target/release/floresta-cli dist/
+          tar -czf floresta-macos-arm64.tar.gz -C dist florestad floresta-cli
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: florestad-macos-${{ steps.arch.outputs.val }}
-          path: florestad-macos-${{ steps.arch.outputs.val }}.tar.gz
-          if-no-files-found: error
+          name: floresta-macos-arm64
+          path: floresta-macos-arm64.tar.gz
