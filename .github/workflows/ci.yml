@@ -1,0 +1,50 @@
+name: Build Floresta (macOS)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [macos-13, macos-14]  # 13 = Intel (x86_64), 14 = Apple Silicon (arm64)
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust (stable)
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+
+      - name: Build release
+        run: |
+          cargo build --release
+          strip -x target/release/florestad || true
+      - name: Detect arch label
+        id: arch
+        run: |
+          if [[ "${{ matrix.os }}" == "macos-13" ]]; then
+            echo "val=x86_64" >> "$GITHUB_OUTPUT"
+          else
+            echo "val=arm64" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Pack artifact
+        run: |
+          mkdir -p dist
+          cp target/release/florestad dist/
+          tar -czf florestad-macos-${{ steps.arch.outputs.val }}.tar.gz -C dist florestad
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: florestad-macos-${{ steps.arch.outputs.val }}
+          path: florestad-macos-${{ steps.arch.outputs.val }}.tar.gz
+          if-no-files-found: error
