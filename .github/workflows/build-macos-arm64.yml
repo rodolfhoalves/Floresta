@@ -14,14 +14,14 @@ env:
 
 jobs:
   build:
-    name: Build floresta for Apple Silicon
+    name: Build Floresta for Apple Silicon
     runs-on: macos-15
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Show runner
+      - name: Show runner info
         run: |
           uname -m
           sw_vers
@@ -29,23 +29,31 @@ jobs:
       - name: Install system dependencies
         run: |
           brew update
-          brew install gcc pkg-config cmake
+          brew install gcc pkg-config cmake boost
 
       - name: Install Rust
         run: |
           rustup toolchain install 1.85.0 --profile minimal
           rustup default 1.85.0
-          rustup target add aarch64-apple-darwin
+          rustc --version
+          cargo --version
 
       - name: Build release binaries
         run: |
-          cargo build --release --locked --target aarch64-apple-darwin --bin florestad --bin floresta-cli
+          cargo build --release --locked --bin florestad --bin floresta-cli
+
+      - name: Verify binaries
+        run: |
+          file target/release/florestad
+          file target/release/floresta-cli
+          target/release/florestad --version || true
+          target/release/floresta-cli --version || true
 
       - name: Package
         run: |
           mkdir -p dist
-          cp target/aarch64-apple-darwin/release/florestad dist/
-          cp target/aarch64-apple-darwin/release/floresta-cli dist/
+          cp target/release/florestad dist/
+          cp target/release/floresta-cli dist/
           tar -czf floresta-macos-arm64.tar.gz -C dist florestad floresta-cli
           shasum -a 256 floresta-macos-arm64.tar.gz > floresta-macos-arm64.sha256
 
